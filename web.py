@@ -1,4 +1,6 @@
 import chainlit as cl
+import os
+from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -8,6 +10,10 @@ from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 import numpy as np
+import components as comp
+
+load_dotenv('components/.env')
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
 malicious_email_vectordb = None
 
@@ -23,7 +29,7 @@ async def start():
     )
     prompt = ChatPromptTemplate.from_messages(
         [   ("system", "You are an expert in cybersecurity and phishing detection. Analyze the given content and provide detailed insights on whether it's suspicious or not. If it's suspicious, explain why and provide safety tips.\
-             **Output in Traditional Chinese**"),
+            **Output in Traditional Chinese**"),
             ("human", "{content}"),
         ]
     )
@@ -32,7 +38,8 @@ async def start():
     embedding = OpenAIEmbeddings()
     # 將預先訓練好的向量資料庫連接到持久化目錄
     if malicious_email_vectordb is None:
-        malicious_email_vectordb = Chroma(persist_directory="malicious_email_vectordb", embedding_function=embedding)
+        malicious_email_vectordb = Chroma(persist_directory="components\malicious_email_vectordb", embedding_function=embedding)
+    print("ma=", malicious_email_vectordb)
 
     runnable = prompt | model | StrOutputParser()
 
@@ -121,7 +128,7 @@ async def analyze_email(content):
     for doc, score in similar_docs:
         examples += f"Content: {doc.page_content}\n"
         examples += f"Malicious: {doc.metadata['malicious']}\n\n"
-        print("doc", doc.page_content, "label", doc.metadata['malicious']," score", score)
+        print("doc=", doc.page_content, "label=", doc.metadata['malicious']," score=", score)
     print("examples", examples)
 
     runnable = cl.user_session.get("runnable")

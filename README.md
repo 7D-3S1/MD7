@@ -16,7 +16,12 @@ virtualenv env01
 ```
 pip install -r requirements.txt
 ```
-
+- 安裝網頁顯示與LLM互動套件
+```
+pip install chainlit
+pip install -U langchain-chroma
+pip install -U langchain-openai
+```
 
 - 增加套件
 ```
