@@ -39,7 +39,6 @@ async def start():
     # 將預先訓練好的向量資料庫連接到持久化目錄
     if malicious_email_vectordb is None:
         malicious_email_vectordb = Chroma(persist_directory="components\malicious_email_vectordb", embedding_function=embedding)
-    print("ma=", malicious_email_vectordb)
 
     runnable = prompt | model | StrOutputParser()
 
