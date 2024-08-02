@@ -25,7 +25,22 @@
         });
         return response.json();
     }
-
+    // Function to process the selected text
+    //選取內文判斷是否惡意
+    // async function processSelectedText(text) {
+    //     console.log(`Processing selected text: ${text}`);
+    //     let icon = document.getElementById('custom-icon');
+    //     icon.style.display = 'none'; // hide the icon
+    //     window.getSelection().removeAllRanges();
+    //     const response = await fetch('http://127.0.0.1:5000/check_email', {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         },
+    //         body: JSON.stringify({ email: email })
+    //     });
+    //     return response.json();
+    // }
     // Function to add status next to the sender email
     async function addStatusToSender(emailElement) {
         if (!emailElement) return;
@@ -33,7 +48,7 @@
         const email = emailElement.getAttribute('email');
         console.log(email);
         if (processedEmails.has(email)) return; // Avoid duplicate requests
-
+        
         const statusData = await sendEmailToBackend(email);
         if (statusData && statusData.data) {
             const score = statusData.data.score;
@@ -56,78 +71,83 @@
         }
     }
 
-    // Function to handle text selection and show custom icon
-    //選取文字跳出小幫手 icon
-    function handleTextSelection() {
-        document.addEventListener('mouseup', (event) => {
-            const selection = window.getSelection();
-            const selectedText = selection.toString().trim();
-            const icon = document.getElementById('custom-icon');
+    // // Function to handle text selection and show custom icon
+    // //選取文字跳出小幫手 icon
+    // function TextSelectionHelper() {
+    //     document.addEventListener('mouseup', (event) => {
+    //         const selection = window.getSelection();
+    //         const selectedText = selection.toString().trim();
+    //         const icon = document.getElementById('custom-icon');
+    //         //被選取後在鼠標旁邊彈出送 去解析 的 icon
+    //         if (selectedText.length > 0) {
+    //             showCustomIcon(selection, event.pageX, event.pageY);
+    //         } else if (icon) {
+    //             icon.style.display = 'none'; // Hide the icon if no text is selected
+    //         }
+    //     });
+    // }
 
-            if (selectedText.length > 0) {
-                showCustomIcon(selection, event.pageX, event.pageY);
-            } else if (icon) {
-                icon.style.display = 'none'; // Hide the icon if no text is selected
-            }
-        });
-    }
+    // // Function to show custom icon near the cursor
+    // function showCustomIcon(selection, mouseX, mouseY) {
+    //     let icon = document.getElementById('custom-icon');
+    //     if (!icon) {
+    //         icon = document.createElement('div');
+    //         icon.id = 'custom-icon';
+    //         icon.style.position = 'absolute';
+    //         icon.style.width = '30px';
+    //         icon.style.height = '30px';
+    //         icon.style.background = 'url(https://i.imgur.com/bgV3MEU.png) no-repeat center center';
+    //         icon.style.backgroundSize = 'contain';
+    //         icon.style.cursor = 'pointer';
+    //         icon.style.zIndex = '9999'; // Ensure the icon is on top
+    //         document.body.appendChild(icon);
 
-    // Function to show custom icon near the cursor
-    function showCustomIcon(selection, mouseX, mouseY) {
-        let icon = document.getElementById('custom-icon');
-        if (!icon) {
-            icon = document.createElement('div');
-            icon.id = 'custom-icon';
-            icon.style.position = 'absolute';
-            icon.style.width = '30px';
-            icon.style.height = '30px';
-            icon.style.background = 'url(https://i.imgur.com/bgV3MEU.png) no-repeat center center';
-            icon.style.backgroundSize = 'contain';
-            icon.style.cursor = 'pointer';
-            icon.style.zIndex = '9999'; // Ensure the icon is on top
-            document.body.appendChild(icon);
+    //         icon.addEventListener('mousedown', (e) => {
+    //             e.preventDefault();
+    //             setTimeout(() => {
+    //                 const selectedText = selection.toString().trim();
+    //                 processSelectedText(selectedText);
+    //             }, 0);
+    //         });
+    //     }
 
-            icon.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                setTimeout(() => {
-                    const selectedText = selection.toString().trim();
-                    processSelectedText(selectedText);
-                }, 0);
-            });
-        }
+    //     icon.style.display = 'block'; // Show the icon
+    //     icon.style.left = `${mouseX + 5}px`;
+    //     icon.style.top = `${mouseY + 5}px`;
+    // }
 
-        icon.style.display = 'block'; // Show the icon
-        icon.style.left = `${mouseX + 5}px`;
-        icon.style.top = `${mouseY + 5}px`;
-    }
 
-    // Function to process the selected text
-    function processSelectedText(text) {
-        console.log(`Processing selected text: ${text}`);
-        let icon = document.getElementById('custom-icon');
-        icon.style.display = 'none'; // hide the icon
-        window.getSelection().removeAllRanges();
-    }   
 
     // Observe changes to the DOM to detect when an email is opened
     const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.addedNodes) {
-                for (let node of mutation.addedNodes) {
-                    if (node.nodeType === 1) {
-                        const emailElement = node.querySelector('span[email]');
-                        if (emailElement) {
-                            addStatusToSender(emailElement);
+        const url = window.location.href;
+        var pre=undefined//上一次的捕捉結果
+        console.log(url,"::::::::",url.split('/#inbox/')[1])
+        if (url.includes('https://mail.google.com/mail/u/0/#inbox/') && url.split('/#inbox/')[1]) {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes) {
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === 1) {
+                            const emailElement = node.querySelector('span[email]');
+                            if (emailElement && pre!=emailElement) {
+                                addStatusToSender(emailElement);
+                                pre=emailElement
+                                break;
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+        else
+        {
+            pre=undefined//離開郵件頁面到收件匣，重置狀態
+        }
     });
 
     // Start observing the DOM
     observer.observe(document.body, { childList: true, subtree: true });
 
     // Initial function to handle text selection
-    handleTextSelection();
+    TextSelectionHelper();
 })();
