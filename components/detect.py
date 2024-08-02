@@ -4,7 +4,6 @@ import json
 from dotenv import load_dotenv
 load_dotenv(f'{os.getcwd()}\components\.env')
 api_KEY = os.getenv('hunterIO')
-print(api_KEY)
 
 
 def mailStatus(email):

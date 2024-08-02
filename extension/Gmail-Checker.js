@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gmail Sender Checker
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Check Gmail sender against backend API
 // @author       You
 // @match        https://mail.google.com/*
@@ -10,6 +10,9 @@
 
 (function() {
     'use strict';
+
+    // Keep track of processed emails to avoid duplicate requests
+    const processedEmails = new Set();
 
     // Function to send email to backend for checking
     async function sendEmailToBackend(email) {
@@ -24,26 +27,32 @@
     }
 
     // Function to add status next to the sender email
-    async function addStatusToSender() {
-        // Get the sender email element
-        const emailElement = document.querySelector('span[email]');
-        if (emailElement) {
-            const email = emailElement.getAttribute('email');
-            const statusData = await sendEmailToBackend(email);
-            if (statusData && statusData.data) {
-                const score = statusData.data.score;
-                const status = statusData.data.status;
-                const statusText = `Score: ${score}, Status: ${status}`;
-                
-                // Create a new span element to display the status
-                const statusSpan = document.createElement('span');
-                statusSpan.textContent = statusText;
-                statusSpan.style.color = status === 'valid' ? 'green' : 'red';
+    async function addStatusToSender(emailElement) {
+        if (!emailElement) return;
+
+        const email = emailElement.getAttribute('email');
+        console.log(email)
+        if (processedEmails.has(email)) return; // Avoid duplicate requests
+
+        const statusData = await sendEmailToBackend(email);
+        if (statusData && statusData.data) {
+            const score = statusData.data.score;
+            const status = statusData.data.status;
+            const statusText = `Score: ${score}, Status: ${status}`;
+
+            // Create or update the status span element
+            let statusSpan = emailElement.parentNode.querySelector('.status-span');
+            if (!statusSpan) {
+                statusSpan = document.createElement('span');
+                statusSpan.className = 'status-span';
                 statusSpan.style.marginLeft = '10px';
-                
-                // Append the status span next to the email element
                 emailElement.parentNode.appendChild(statusSpan);
             }
+
+            statusSpan.textContent = statusText;
+            statusSpan.style.color = status === 'valid' ? 'green' : 'red';
+
+            processedEmails.add(email); // Mark email as processed
         }
     }
 
@@ -53,8 +62,9 @@
             if (mutation.addedNodes) {
                 for (let node of mutation.addedNodes) {
                     if (node.nodeType === 1) {
-                        if (node.querySelector('span[email]')) {
-                            addStatusToSender();
+                        const emailElement = node.querySelector('span[email]');
+                        if (emailElement) {
+                            addStatusToSender(emailElement);
                         }
                     }
                 }
