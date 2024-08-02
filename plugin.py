@@ -11,7 +11,9 @@ def check_email():
     email = request.json.get('email')
     if not email:
         return jsonify({'error': 'No email provided'}), 400
-    return mailStatus(email)
+    res=mailStatus(email)
+    print(".route('/check_email')",res)
+    return res
     
 
 if __name__ == '__main__':
