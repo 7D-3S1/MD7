@@ -1,3 +1,5 @@
 .env
 /.chainlit/*
 /__pycache__/
+.files/*
+components/__pycache__/
