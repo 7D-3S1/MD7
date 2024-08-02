@@ -14,7 +14,7 @@ def check_email():
     if not email:
         return jsonify({'error': 'No email provided'}), 400
     res=mailStatus(email)
-    print("/check_email  -------------",counter);counter+=1
+    print(f"/check_email {email} -------------",counter);counter+=1
     return res
     
 

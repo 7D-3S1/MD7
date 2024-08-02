@@ -31,6 +31,7 @@
         if (!emailElement) return;
 
         const email = emailElement.getAttribute('email');
+        console.log(email)
         if (processedEmails.has(email)) return; // Avoid duplicate requests
 
         const statusData = await sendEmailToBackend(email);
