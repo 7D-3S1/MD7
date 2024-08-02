@@ -1,29 +1,22 @@
-import chainlit as cl
-import requests
-import re
-from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import StrOutputParser
-from langchain.schema.runnable import Runnable
-from langchain.schema.runnable.config import RunnableConfig
 from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import CharacterTextSplitter
-
-# 假設你已經有一個惡意網址資料庫，並已經將其轉換為向量存儲在 Chroma 中
-# 這裡我們先創建一個示例數據庫
-malicious_data = [
-    ("This is a phishing website trying to steal your credentials.", True),
-    ("Welcome to our legitimate online store.", False),
-    ("Your account has been locked. Click here to verify your identity.", True),
-    ("Thank you for visiting our official website.", False),
-    ("Congratulations! You've won a prize. Enter your details to claim.", True),
-]
-
+import pandas as pd
 # 初始化 OpenAI 嵌入模型
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(show_progress_bar=True)
 
-# 創建向量數據庫
-texts = [text for text, _ in malicious_data]
-metadatas = [{"malicious": label} for _, label in malicious_data]
-vectordb = Chroma.from_texts(texts, embeddings, metadatas=metadatas, persist_directory="malicious_email_vectordb")
+file_path = 'components/train_spam.csv'
+csv_data = pd.read_csv(file_path)
+texts = csv_data['v2'].tolist()
+metadatas = [{"malicious": label} for label in csv_data['v1'].tolist()]
+print(texts[:5])
+print(metadatas[:5])
+input("Press Enter to continue...")
+# chunked the data into smaller pieces to avoid memory issues in Chroma
+CHUNK_SIZE = 100
+
+vectordb = Chroma.from_texts(texts[:CHUNK_SIZE], embeddings, metadatas=metadatas[:CHUNK_SIZE], persist_directory="components/malicious_email_vectordb")
+
+for i in range(CHUNK_SIZE, len(texts), CHUNK_SIZE):
+    chunk_texts = texts[i:i+CHUNK_SIZE]
+    chunk_metadatas = metadatas[i:i+CHUNK_SIZE]
+    vectordb.add_texts(chunk_texts, metadatas=chunk_metadatas)
