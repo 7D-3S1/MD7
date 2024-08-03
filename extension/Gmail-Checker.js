@@ -37,6 +37,7 @@
         
         const statusData = await sendEmailToBackend(email);
         if (statusData && statusData.data) {
+            console.log("type of status",statusData.data,"\n",typeof(statusData.data));
             const score = statusData.data.score;
             const status = statusData.data.status;
             const statusText = `Score: ${score}, Status: ${status}`;
@@ -56,8 +57,20 @@
             processedEmails.add(email); // Mark email as processed
         }
     }
-
-    function handleHref(href) {
+    async function postUrlCheck(href) {
+        const response = await fetch('http://127.0.0.1:5000/url_check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url: href })
+        });
+        return response.json();
+    }
+    async function handleHref(href) {
+        const response=await postUrlCheck(href);
+        const malicious=response.data.attributes.stats.malicious//惡意程度
+        console.log("網址惡意程度：",malicious)
         if (confirm("確定要打開這個鏈接嗎？\n" + href)) {
             // 用戶確認，繼續打開鏈接
             window.open(href, '_blank');
@@ -74,10 +87,8 @@
     const observer = new MutationObserver((mutations) => {
         const url = window.location.href;
         var pre=undefined//上一次的捕捉結果
-        console.log(url)
         const regex = /^https:\/\/mail\.google\.com\/mail\/u\/0\/#(.+?)\/(.+)$/; // 正則表達式匹配 /u/0/# 后面有参数的 URL
         if (regex.test(url)) {
-            console.log("進入一列頁")
             mutations.forEach((mutation) => {
                 if (mutation.addedNodes) {
                     for (let node of mutation.addedNodes) {
@@ -85,6 +96,7 @@
                             const emailElement = node.querySelector('span[email]');
                             if (emailElement && pre!=emailElement) {
                                 addStatusToSender(emailElement);
+                                console.log("查看一封信，檢查 mail:",emailElement)
                                 pre=emailElement
                                 break;
                             }

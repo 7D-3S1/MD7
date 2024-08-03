@@ -62,15 +62,14 @@ async def VT_analyze_url(url_to_analyze):
             if response.status == 200:
                 response_data = await response.json()
                 analysis_id = response_data["data"]["id"]
-                print(f"URL submitted successfully. Analysis ID: {analysis_id}")
+                # print(f"URL submitted successfully. Analysis ID: {analysis_id}")
 
-                await asyncio.sleep(3)
 
                 report_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
                 async with session.get(report_url, headers=headers) as report_response:
                     if report_response.status == 200:
                         report = await report_response.json()
-                        print(json.dumps(report, indent=4))
+                        # print(json.dumps(report, indent=4))
                         return report
                     else:
                         error_text = await report_response.text()

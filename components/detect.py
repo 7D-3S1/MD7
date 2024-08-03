@@ -2,7 +2,7 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
-load_dotenv(f'{os.getcwd()}\components\.env')
+load_dotenv(f'{os.getcwd()}\.env')
 api_KEY = os.getenv('hunterIO')
 
 
@@ -16,7 +16,7 @@ def sender_credit(email):
         if response.status_code == 200:
         # 解析 JSON 数据
             data = response.json()
-            print(json.dumps(data, indent=4))# for debug
+            # print(json.dumps(data, indent=4))# for debug
             return data
         elif response.status_code == 202:
             print(f'fail check sender_credit 過一陣子再試一次: {response.status_code}, 錯誤 {response.text}')
