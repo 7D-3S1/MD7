@@ -10,7 +10,7 @@ texts = csv_data['v2'].tolist()
 metadatas = [{"malicious": label} for label in csv_data['v1'].tolist()]
 print(texts[:5])
 print(metadatas[:5])
-input("Press Enter to continue...")
+# input("Press Enter to continue...")
 # chunked the data into smaller pieces to avoid memory issues in Chroma
 CHUNK_SIZE = 100
 
