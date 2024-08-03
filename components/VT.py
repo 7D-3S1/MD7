@@ -83,7 +83,7 @@ async def VT_analyze_url(url_to_analyze):
                 print(error_text)
                 return {"error": f"Failed to submit URL: {response.status}"}
             
-async def VT_analyze_file(api_key, file_path):
+async def VT_analyze_file(file_path):
     """
     Uploads a file to VirusTotal for analysis and retrieves the analysis report.
 
