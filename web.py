@@ -157,15 +157,12 @@ async def analyze_email(content, attachments: List[Element]):
     k=5    
     malicious_email_vectordb = cl.user_session.get("malicious_email_vectordb")
     similar_docs = malicious_email_vectordb.similarity_search_with_score(content, k)
-    print("similar_docs", similar_docs)
 
     # check if there are any URLs in the email content
     url_data = find_all_urls(content)
-    print("url_data= ", url_data)
 
     if url_data:
         url_analysis_prompt = await analyze_url(url_data)
-        print("url_analysis_prompt= ", url_analysis_prompt)
     else:
         url_analysis_prompt = ""
 
@@ -179,14 +176,14 @@ async def analyze_email(content, attachments: List[Element]):
     for doc, score in similar_docs:
         examples += f"Malicious: {doc.metadata['malicious']}\n"
         examples += f"Content: {doc.page_content}\n\n"
-        print("doc=", doc.page_content, "label=", doc.metadata['malicious']," score=", score)
+        # print("doc=", doc.page_content, "label=", doc.metadata['malicious']," score=", score)
 
     email_content_prompt = f"Below are the email content, and the examples are the most similar email content in the database, please refer to the examples for judgment and conclusion.\
     email_content: {content}"
 
-    print("email_content_prompt: ", email_content_prompt)
-    print("VT_attachments_analyze_prompt: ", VT_attachments_analyze_prompt)
-    print("url_analysis_prompt: ", url_analysis_prompt)
+    # print("email_content_prompt: ", email_content_prompt)
+    # print("VT_attachments_analyze_prompt: ", VT_attachments_analyze_prompt)
+    # print("url_analysis_prompt: ", url_analysis_prompt)
 
     # 調用 OpenAI 模型進行分析
     runnable = cl.user_session.get("runnable")
@@ -197,10 +194,6 @@ async def analyze_email(content, attachments: List[Element]):
         await msg.stream_token(chunk)
 
     await msg.send()
-    
-    # response = await runnable.ainvoke({"examples": examples, "content": email_content_prompt + VT_attachments_analyze_prompt})
-
-    # await cl.Message(content=f"分析結果：\n\n{response}\n\n防詐資訊：釣魚網站常常模仿知名網站的外觀，試圖騙取您的個人信息或登錄憑證。請仔細檢查URL，避免在可疑網站輸入敏感信息。").send()
 
 async def analyze_attachments(attachments: List[Element]):
     task = [asyncio.create_task(VT_analyze_file(attachment.path)) for attachment in attachments]
