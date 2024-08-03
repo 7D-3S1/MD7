@@ -59,11 +59,12 @@
     function handleHref(href) {
         if (confirm("確定要打開這個鏈接嗎？\n" + href)) {
             // 用戶確認，繼續打開鏈接
-            window.location.href = href;
+            window.open(href, '_blank');
         } else {
             // 用戶取消，不執行任何操作
             console.log("用戶取消了鏈接打開。");
         }
+        return
     }
 
 
@@ -72,37 +73,39 @@
     const observer = new MutationObserver((mutations) => {
         const url = window.location.href;
         var pre=undefined//上一次的捕捉結果
-        console.log(url,"::::::::",url.split('/#inbox/')[1])
-        if (url.includes('https://mail.google.com/mail/u/0/#inbox/') && url.split('/#inbox/')[1]) {
-            // mutations.forEach((mutation) => {
-            //     if (mutation.addedNodes) {
-            //         for (let node of mutation.addedNodes) {
-            //             if (node.nodeType === 1) {
-            //                 const emailElement = node.querySelector('span[email]');
-            //                 if (emailElement && pre!=emailElement) {
-            //                     addStatusToSender(emailElement);
-            //                     pre=emailElement
-            //                     break;
-            //                 }
-            //             }
-            //         }
-            //     }
-            // });
+        console.log(url)
+        const regex = /^https:\/\/mail\.google\.com\/mail\/u\/0\/#(.+?)\/(.+)$/; // 正則表達式匹配 /u/0/# 后面有参数的 URL
+        if (regex.test(url)) {
+            console.log("進入一列頁")
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes) {
+                    for (let node of mutation.addedNodes) {
+                        if (node.nodeType === 1) {
+                            const emailElement = node.querySelector('span[email]');
+                            if (emailElement && pre!=emailElemnt) {
+                                addStatusToSender(emailElement);
+                                pre=emailElement
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+            const links = document.querySelectorAll('a');
+            // 為每個 <a> 標籤添加點擊事件監聽器
+                links.forEach(link => {
+                    link.addEventListener('click', function(event) {
+                        event.preventDefault(); // 防止默認的鏈接跳轉行為
+                        console.log("line start！")
+                        handleHref(link.href); // 將 href 屬性傳入處理函數
+                    });
+                });
         }
         else
         {
             pre=undefined//離開郵件頁面到收件匣，重置狀態
         }
-        let links = document.querySelectorAll('a');
 
-        // 為每個 <a> 標籤添加點擊事件監聽器
-            links.forEach(link => {
-                link.addEventListener('click', function(event) {
-                    event.preventDefault(); // 防止默認的鏈接跳轉行為
-                    console.log("line start！")
-                    handleHref(link.href); // 將 href 屬性傳入處理函數
-                });
-            });
     });
 
     // Start observing the DOM
