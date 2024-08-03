@@ -1,0 +1,8 @@
+{
+    "name": "Python 3",
+    "build": {
+        "dockerfile": "Dockerfile"
+        // "context": ".."
+    },
+    "postCreateCommand": "pip install -r requirements.txt"
+}
