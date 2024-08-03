@@ -58,16 +58,6 @@ async def start():
     ]
     cl.user_session.set("actions", actions)
 
-    # elements = [
-    #     cl.File(
-    #         name="attachment",
-    #         path="./input_data",
-    #         display="inline",
-    #         label="📎 附件上傳",
-    #     )
-    # ]
-    # cl.user_session.set("elements", elements)
-
     msg = cl.Message(
         content="歡迎使用防詐小精靈! 請選擇要分析的內容類型：",
         actions=actions,
@@ -86,9 +76,6 @@ async def on_action(action: cl.Action):
     elif action.value == "Email":
         await cl.Message(content="請輸入要分析的郵件內容：").send()
         cl.user_session.set("action", "Email")
-    # elif action.value == "attachment":
-    #     await cl.Message(content="請上傳要分析的郵件附件：").send()
-    #     cl.user_session.set("action", "attachment")
 
 @cl.on_message
 async def main(message: cl.Message):
@@ -96,7 +83,7 @@ async def main(message: cl.Message):
     content = message.content
     print(action, content)
     if action == "url":
-        await analyze_url(content)
+        await analyze_web(content)
     elif action == "SMS":
         await analyze_sms(content)
     elif action == "Email":            
@@ -105,7 +92,7 @@ async def main(message: cl.Message):
         await cl.Message(content="請先選擇要分析的內容類型。").send()
 
 
-async def analyze_url(url):
+async def analyze_web(url):
     try:
         response = requests.get(url)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -132,6 +119,38 @@ async def analyze_sms(content):
     
     await cl.Message(content=f"分析結果：{result}\n\n防詐資訊：釣魚簡訊常常聲稱來自銀行或其他機構，要求您提供個人信息或點擊可疑鏈接。請不要回覆可疑簡訊或點擊其中的鏈接。").send()
 
+def find_all_urls(text):
+    url_pattern = re.compile(r'https?://(?:www\.)?[-\w.]+(?:\.[a-z]{2,3})+(?:[-\w./?%&=]*)?', re.IGNORECASE)
+    try:
+        respons = re.findall(url_pattern, text)
+    except CancelledError:
+        respons = None
+    return respons
+
+async def analyze_url(url_data):
+    task = [asyncio.create_task(VT_analyze_url(url)) for url in url_data]
+    reports = await asyncio.gather(*task)
+    detect_results = []
+    for report, url in zip(reports, url_data):
+        try:
+            detect_results.append({
+                "url": url,
+                "antivirus_vendors_detect_type_count": {
+                    "malicious": report["data"]["attributes"]["stats"]["malicious"],
+                    "suspicious": report["data"]["attributes"]["stats"]["suspicious"],
+                    "undetected": report["data"]["attributes"]["stats"]["undetected"],
+                    "harmless": report["data"]["attributes"]["stats"]["harmless"],
+                }
+            })
+        except Exception as e:
+            print(f"Error: {e}")
+            detect_results.append(None)
+
+    url_analysis_prompt = f"We have the results of the antivirus analysis of the URLs in the email content, the item antivirus_vendors_detect_type_count is the number of antivirus vendors have scanned, which contains four items, malicious url link, suspicious url link, undetected suspicious url link, and harmless url link. Please also refer to this analysis result for judgment.\
+    reports: {detect_results}"
+
+    return url_analysis_prompt
+
 async def analyze_email(content, attachments: List[Element]):
     
     # 在向量數據庫中查詢最相似的 k 個向量
@@ -140,10 +159,20 @@ async def analyze_email(content, attachments: List[Element]):
     similar_docs = malicious_email_vectordb.similarity_search_with_score(content, k)
     print("similar_docs", similar_docs)
 
-    if attachments:
-        VT_analyze_prompt = await analyze_attachments(attachments)
+    # check if there are any URLs in the email content
+    url_data = find_all_urls(content)
+    print("url_data= ", url_data)
+
+    if url_data:
+        url_analysis_prompt = await analyze_url(url_data)
+        print("url_analysis_prompt= ", url_analysis_prompt)
     else:
-        VT_analyze_prompt = ""
+        url_analysis_prompt = ""
+
+    if attachments:
+        VT_attachments_analyze_prompt = await analyze_attachments(attachments)
+    else:
+        VT_attachments_analyze_prompt = ""
         
     # 準備範例文本
     examples = ""
@@ -151,32 +180,30 @@ async def analyze_email(content, attachments: List[Element]):
         examples += f"Malicious: {doc.metadata['malicious']}\n"
         examples += f"Content: {doc.page_content}\n\n"
         print("doc=", doc.page_content, "label=", doc.metadata['malicious']," score=", score)
-    # print("examples", examples)
 
     email_content_prompt = f"Below are the email content, and the examples are the most similar email content in the database, please refer to the examples for judgment and conclusion.\
     email_content: {content}"
 
-    
-
-    print("email_content_prompt", email_content_prompt)
-    print("VT_analyze_prompt", VT_analyze_prompt)
+    print("email_content_prompt: ", email_content_prompt)
+    print("VT_attachments_analyze_prompt: ", VT_attachments_analyze_prompt)
+    print("url_analysis_prompt: ", url_analysis_prompt)
 
     # 調用 OpenAI 模型進行分析
     runnable = cl.user_session.get("runnable")
     msg = cl.Message(content="")
     async for chunk in runnable.astream(
-        {"examples": examples, "content": email_content_prompt + VT_analyze_prompt}
+        {"examples": examples, "content": email_content_prompt + url_analysis_prompt + VT_attachments_analyze_prompt}
     ):
         await msg.stream_token(chunk)
 
     await msg.send()
     
-    # response = await runnable.ainvoke({"examples": examples, "content": email_content_prompt + VT_analyze_prompt})
+    # response = await runnable.ainvoke({"examples": examples, "content": email_content_prompt + VT_attachments_analyze_prompt})
 
     # await cl.Message(content=f"分析結果：\n\n{response}\n\n防詐資訊：釣魚網站常常模仿知名網站的外觀，試圖騙取您的個人信息或登錄憑證。請仔細檢查URL，避免在可疑網站輸入敏感信息。").send()
 
 async def analyze_attachments(attachments: List[Element]):
-    task = [asyncio.create_task(VT_analyze_file(VT_API_KEY, attachment.path)) for attachment in attachments]
+    task = [asyncio.create_task(VT_analyze_file(attachment.path)) for attachment in attachments]
     reports = await asyncio.gather(*task)
     detect_results = []
     for report, filename in zip(reports, [attachment.name for attachment in attachments]):
@@ -194,10 +221,10 @@ async def analyze_attachments(attachments: List[Element]):
             print(f"Error: {e}")
             detect_results.append(None)
 
-    VT_analyze_prompt = f"Additionally, we have the results of the antivirus analysis of the files attached to the email, the item antivirus_vendors_detect_type_count is the number of antivirus vendors have scanned, which contains four items, malicious files, suspicious files, undetected suspicious files, and harmless files. Please also refer to this analysis result for judgment and conclusion.\
+    VT_attachments_analyze_prompt = f"Additionally, we have the results of the antivirus analysis of the files attached to the email, the item antivirus_vendors_detect_type_count is the number of antivirus vendors have scanned, which contains four items, malicious files, suspicious files, undetected suspicious files, and harmless files. Please also refer to this analysis result for judgment and conclusion.\
     reports: {detect_results}"
 
-    return VT_analyze_prompt
+    return VT_attachments_analyze_prompt
 
 # 需要再修改內容
 def check_suspicious_content(content):
