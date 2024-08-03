@@ -1,7 +1,6 @@
 import asyncio
 import chainlit as cl
 import os
-from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -16,7 +15,7 @@ from typing import List
 from chainlit.element import Element
 from components.VT import VT_analyze_url, VT_analyze_file
 
-VT_API_KEY = os.getenv("VT-API-KEY")
+
 
 malicious_email_vectordb = None
 
@@ -148,11 +147,10 @@ async def analyze_url(url_data):
 
     url_analysis_prompt = f"We have the results of the antivirus analysis of the URLs in the email content, the item antivirus_vendors_detect_type_count is the number of antivirus vendors have scanned, which contains four items, malicious url link, suspicious url link, undetected suspicious url link, and harmless url link. Please also refer to this analysis result for judgment.\
     reports: {detect_results}"
-
     return url_analysis_prompt
 
-async def analyze_email(content, attachments: List[Element]):
-    
+async def analyze_email(content, attachments: List[Element],retunr_require=False):
+    print("no attttttttttttttt,",attachments)
     # 在向量數據庫中查詢最相似的 k 個向量
     k=5    
     malicious_email_vectordb = cl.user_session.get("malicious_email_vectordb")
@@ -195,8 +193,11 @@ async def analyze_email(content, attachments: List[Element]):
         {"examples": examples, "content": email_content_prompt + url_analysis_prompt + VT_attachments_analyze_prompt}
     ):
         await msg.stream_token(chunk)
-
-    await msg.send()
+    if retunr_require:
+        print("mmsg:",msg.content)
+        return msg.content
+    else:
+        await msg.send()
     
     # response = await runnable.ainvoke({"examples": examples, "content": email_content_prompt + VT_attachments_analyze_prompt})
 
@@ -230,6 +231,3 @@ async def analyze_attachments(attachments: List[Element]):
 def check_suspicious_content(content):
     suspicious_keywords = ['密碼', '信用卡', '緊急', '中獎', '錢']
     return any(keyword in content for keyword in suspicious_keywords)
-
-if __name__ == "__main__":
-    cl.run()
