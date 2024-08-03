@@ -15,6 +15,7 @@ import components as comp
 from typing import List
 from chainlit.element import Element
 from components.VT import VT_analyze_url, VT_analyze_file
+from components.detect import sender_credit
 
 VT_API_KEY = os.getenv("VT-API-KEY")
 
@@ -51,10 +52,14 @@ async def start():
     cl.user_session.set("runnable", runnable)
     cl.user_session.set("embedding", embedding)
 
+    await show_initial_menu()
+
+async def show_initial_menu():
     actions = [
+        cl.Action(name="action", value="Email", label="✅ Email"),
+        # 如果之前有其他選項，也可以加回來
         # cl.Action(name="action", value="Website", label="✅ Website"),
         # cl.Action(name="action", value="SMS", label="✅ SMS"),
-        cl.Action(name="action", value="Email", label="✅ Email"),
     ]
     cl.user_session.set("actions", actions)
 
@@ -64,9 +69,17 @@ async def start():
     )
     await msg.send()
 
+@cl.action_callback("email_option")
+async def on_email_option(action: cl.Action):
+    if action.value == "with_sender":
+        await cl.Message(content="請輸入寄件者的電子郵件地址：").send()
+        cl.user_session.set("action", "Email_sender")
+    elif action.value == "without_sender":
+        await cl.Message(content="請輸入要分析的郵件內容：").send()
+        cl.user_session.set("action", "Email_content")
+
 @cl.action_callback("action")
 async def on_action(action: cl.Action):
-    # print("hi", action.forId)
     if action.value == "Website":
         await cl.Message(content="請輸入要分析的網頁 URL：").send()
         cl.user_session.set("action", "url")
@@ -74,8 +87,12 @@ async def on_action(action: cl.Action):
         await cl.Message(content="請輸入要分析的簡訊內容：").send()
         cl.user_session.set("action", "SMS")
     elif action.value == "Email":
-        await cl.Message(content="請輸入要分析的郵件內容：").send()
-        cl.user_session.set("action", "Email")
+        actions = [
+            cl.Action(name="email_option", value="with_sender", label="輸入寄件者"),
+            cl.Action(name="email_option", value="without_sender", label="直接分析郵件內容"),
+        ]
+        await cl.Message(content="請選擇是否要輸入寄件者信息：", actions=actions).send()
+        cl.user_session.set("action", "Email_option")
 
 @cl.on_message
 async def main(message: cl.Message):
@@ -86,10 +103,17 @@ async def main(message: cl.Message):
         await analyze_web(content)
     elif action == "SMS":
         await analyze_sms(content)
-    elif action == "Email":            
-        await analyze_email(content, message.elements)
+    elif action == "Email_sender":
+        cl.user_session.set("sender_email", content)
+        await cl.Message(content="請輸入要分析的郵件內容：").send()
+        cl.user_session.set("action", "Email_content")
+    elif action == "Email_content":
+        sender_email = cl.user_session.get("sender_email", None)
+        await analyze_email(content, message.elements, sender_email)
     else:
         await cl.Message(content="請先選擇要分析的內容類型。").send()
+
+    await show_initial_menu()
 
 
 async def analyze_web(url):
@@ -122,10 +146,10 @@ async def analyze_sms(content):
 def find_all_urls(text):
     url_pattern = re.compile(r'https?://(?:www\.)?[-\w.]+(?:\.[a-z]{2,3})+(?:[-\w./?%&=]*)?', re.IGNORECASE)
     try:
-        respons = re.findall(url_pattern, text)
-    except CancelledError:
-        respons = None
-    return respons
+        response = re.findall(url_pattern, text)
+    except:
+        response = None
+    return response
 
 async def analyze_url(url_data):
     task = [asyncio.create_task(VT_analyze_url(url)) for url in url_data]
@@ -151,10 +175,13 @@ async def analyze_url(url_data):
 
     return url_analysis_prompt
 
-async def analyze_email(content, attachments: List[Element]):
-    
+async def analyze_email(content: str, attachments: List[Element], sender_email: str = None):
+    sender_analysis = ""
+    if sender_email:
+        sender_analysis = sender_credit(sender_email)
+    sender_analysis = sender_credit(sender_email)
     # 在向量數據庫中查詢最相似的 k 個向量
-    k=5    
+    k=5
     malicious_email_vectordb = cl.user_session.get("malicious_email_vectordb")
     similar_docs = malicious_email_vectordb.similarity_search_with_score(content, k)
 
@@ -178,8 +205,14 @@ async def analyze_email(content, attachments: List[Element]):
         examples += f"Content: {doc.page_content}\n\n"
         # print("doc=", doc.page_content, "label=", doc.metadata['malicious']," score=", score)
 
-    email_content_prompt = f"Below are the email content, and the examples are the most similar email content in the database, please refer to the examples for judgment and conclusion.\
-    email_content: {content}"
+    # email_content_prompt = f"Below are the email content, and the examples are the most similar email content in the database, please refer to the examples for judgment and conclusion.\
+    # email_content: {content}"
+
+    email_content_prompt = f"Below are the email content and sender information (if provided). The examples are the most similar email content in the database, please refer to the examples for judgment and conclusion.\n"
+    if sender_email:
+        email_content_prompt += f"Sender: {sender_email}\n"
+        email_content_prompt += f"Sender Analysis: {sender_analysis}\n"
+    email_content_prompt += f"email_content: {content}"
 
     # print("email_content_prompt: ", email_content_prompt)
     # print("VT_attachments_analyze_prompt: ", VT_attachments_analyze_prompt)
@@ -196,8 +229,8 @@ async def analyze_email(content, attachments: List[Element]):
     await msg.send()
 
 async def analyze_attachments(attachments: List[Element]):
-    task = [asyncio.create_task(VT_analyze_file(attachment.path)) for attachment in attachments]
-    reports = await asyncio.gather(*task)
+    tasks = [asyncio.create_task(VT_analyze_file(attachment.path)) for attachment in attachments]
+    reports = await asyncio.gather(*tasks)
     detect_results = []
     for report, filename in zip(reports, [attachment.name for attachment in attachments]):
         try:
