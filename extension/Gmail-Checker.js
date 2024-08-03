@@ -67,11 +67,35 @@
         });
         return response.json();
     }
+    function isShortUrl(url) {
+        try {
+            return /short\.ly|reurl\.cc|tinyurl\.com/.test(url);
+        } catch (error) {
+            console.error('Error fetching content:', error);
+            return false;
+        }
+    }
     async function handleHref(href) {
         const response=await postUrlCheck(href);
         const malicious=response.data.attributes.stats.malicious//惡意程度
+        var status;
+        if(malicious>=70)
+        {status="危險"}
+        else if(malicious>=30)
+        {status="可疑"}
+        else{status="無害"}
+
+        var option;
+        console.log("href:",isShortUrl(href))
+        if(isShortUrl(href))
+        {option="請注意，偵測到短網址\n"}
+        else
+        {
+            option="\n"
+        }
         const msg=`
-            預估網址惡意程度：${malicious}\n
+            預估網址惡意程度：${status}
+            ${option}
             確定要打開這個鏈接嗎？\n
             ${href}
         `

@@ -1,10 +1,8 @@
 from flask import Flask, request, jsonify
 import os
-import json
 from flask_cors import CORS
 from components.detect import sender_credit
 from components.VT import VT_analyze_url
-from chainlit import Element
 app = Flask(__name__)
 CORS(app)
 api_KEY = os.getenv('HUNTER_IO_API_KEY')
