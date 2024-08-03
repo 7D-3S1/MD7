@@ -70,14 +70,19 @@
     async function handleHref(href) {
         const response=await postUrlCheck(href);
         const malicious=response.data.attributes.stats.malicious//惡意程度
-        console.log("網址惡意程度：",malicious)
-        if (confirm("確定要打開這個鏈接嗎？\n" + href)) {
+        const msg=`
+            預估網址惡意程度：${malicious}\n
+            確定要打開這個鏈接嗎？\n
+            ${href}
+        `
+        if (confirm(msg)) {
             // 用戶確認，繼續打開鏈接
             window.open(href, '_blank');
-        } else {
-            // 用戶取消，不執行任何操作
-            console.log("用戶取消了鏈接打開。");
-        }
+        } 
+        // else {
+        //     // 用戶取消，不執行任何操作
+        //     console.log("用戶取消了鏈接打開。");
+        // }
         return
     }
 
@@ -128,66 +133,63 @@
     observer.observe(document.body, { childList: true, subtree: true });
 
     // //選取文字跳出小幫手 icon
-    // function TextSelectionHelper() {
-    //     document.addEventListener('mouseup', (event) => {
-    //         const selection = window.getSelection();
-    //         const selectedText = selection.toString().trim();
-    //         const icon = document.getElementById('custom-icon');
-    //         //被選取後在鼠標旁邊彈出送 去解析 的 icon
-    //         if (selectedText.length > 0) {
-    //             showCustomIcon(selection, event.pageX, event.pageY);
-    //         } else if (icon) {
-    //             icon.style.display = 'none'; // Hide the icon if no text is selected
-    //         }
-    //     });
-    // }
+    function TextSelectionHelper() {
+        document.addEventListener('mouseup', (event) => {
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
+            const icon = document.getElementById('custom-icon');
+            //被選取後在鼠標旁邊彈出送 去解析 的 icon
+            if (selectedText.length > 0) {
+                showCustomIcon(selection, event.pageX, event.pageY);
+            } else if (icon) {
+                icon.style.display = 'none'; // Hide the icon if no text is selected
+            }
+        });
+    
+    }
 
-    // // Function to show custom icon near the cursor
-    // function showCustomIcon(selection, mouseX, mouseY) {
-    //     let icon = document.getElementById('custom-icon');
-    //     if (!icon) {
-    //         icon = document.createElement('div');
-    //         icon.id = 'custom-icon';
-    //         icon.style.position = 'absolute';
-    //         icon.style.width = '30px';
-    //         icon.style.height = '30px';
-    //         icon.style.background = 'url(https://i.imgur.com/bgV3MEU.png) no-repeat center center';
-    //         icon.style.backgroundSize = 'contain';
-    //         icon.style.cursor = 'pointer';
-    //         icon.style.zIndex = '9999'; // Ensure the icon is on top
-    //         document.body.appendChild(icon);
+    // Function to show custom icon near the cursor
+    function showCustomIcon(selection, mouseX, mouseY) {
+        let icon = document.getElementById('custom-icon');
+        if (!icon) {
+            icon = document.createElement('div');
+            icon.id = 'custom-icon';
+            icon.style.position = 'absolute';
+            icon.style.width = '30px';
+            icon.style.height = '30px';
+            icon.style.background = 'url(https://i.imgur.com/bgV3MEU.png) no-repeat center center';
+            icon.style.backgroundSize = 'contain';
+            icon.style.cursor = 'pointer';
+            icon.style.zIndex = '9999'; // Ensure the icon is on top
+            document.body.appendChild(icon);
 
-    //         icon.addEventListener('mousedown', (e) => {
-    //             e.preventDefault();
-    //             setTimeout(() => {
-    //                 const selectedText = selection.toString().trim();
-    //                 processSelectedText(selectedText);
-    //             }, 0);
-    //         });
-    //     }
+            icon.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                setTimeout(() => {
+                    const selectedText = selection.toString().trim();
+                    processSelectedText(selectedText);
+                }, 0);
+            });
+        }
 
-    //     icon.style.display = 'block'; // Show the icon
-    //     icon.style.left = `${mouseX + 5}px`;
-    //     icon.style.top = `${mouseY + 5}px`;
-    // }
-    //     // Function to process the selected text
-    // //選取內文判斷是否惡意
-    // async function processSelectedText(text) {
-    //     console.log(`Processing selected text: ${text}`);
-    //     let icon = document.getElementById('custom-icon');
-    //     icon.style.display = 'none'; // hide the icon
-    //     window.getSelection().removeAllRanges();
-    //     const response = await fetch('http://127.0.0.1:5000/check_email', {
-    //         method: 'POST',
-    //         headers: {
-    //             'Content-Type': 'application/json'
-    //         },
-    //         body: JSON.stringify({ email: email })
-    //     });
-    //     return response.json();
-    // }
+        icon.style.display = 'block'; // Show the icon
+        icon.style.left = `${mouseX + 5}px`;
+        icon.style.top = `${mouseY + 5}px`;
+    }
+        // Function to process the selected text
+    //選取內文判斷是否惡意
+    async function processSelectedText(text) {
+        console.log(`Processing selected text: ${text}`);
+        let icon = document.getElementById('custom-icon');
+        icon.style.display = 'none'; // hide the icon
+        window.getSelection().removeAllRanges();
+        navigator.clipboard.writeText(text);
+        const newTab = window.open('http://127.0.0.1:8000', '_blank');
+
+    };
+    
 
 
     // Initial function to handle text selection
-    // TextSelectionHelper();
+    TextSelectionHelper();
 })();
