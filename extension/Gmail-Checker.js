@@ -13,6 +13,7 @@
 
     // Keep track of processed emails to avoid duplicate requests
     const processedEmails = new Set();
+    let linksProcessed = new WeakSet(); //超連結標籤集合
 
     // Function to send email to backend for checking
     async function sendEmailToBackend(email) {
@@ -82,7 +83,7 @@
                     for (let node of mutation.addedNodes) {
                         if (node.nodeType === 1) {
                             const emailElement = node.querySelector('span[email]');
-                            if (emailElement && pre!=emailElemnt) {
+                            if (emailElement && pre!=emailElement) {
                                 addStatusToSender(emailElement);
                                 pre=emailElement
                                 break;
@@ -92,18 +93,21 @@
                 }
             });
             const links = document.querySelectorAll('a');
-            // 為每個 <a> 標籤添加點擊事件監聽器
-                links.forEach(link => {
+            links.forEach(link => {
+                if (!linksProcessed.has(link)) { 
+                    linksProcessed.add(link);
                     link.addEventListener('click', function(event) {
-                        event.preventDefault(); // 防止默認的鏈接跳轉行為
-                        console.log("line start！")
-                        handleHref(link.href); // 將 href 屬性傳入處理函數
+                        event.preventDefault(); // 防止默認的連結跳轉行為
+                        console.log("line start！");
+                        handleHref(link.href); // 
                     });
-                });
+                }
+            });
         }
         else
         {
             pre=undefined//離開郵件頁面到收件匣，重置狀態
+            linksProcessed = new WeakSet(); // 重置超連結集合
         }
 
     });
