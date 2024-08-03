@@ -1,10 +1,12 @@
+import os
 import aiohttp
 import asyncio
 import json
-import dotenv
-import os
+from dotenv import load_dotenv
+load_dotenv(f'{os.getcwd()}\.env')
+VTAPI_KEY = os.getenv('VT-API-KEY')
 
-async def VT_analyze_url(url_to_analyze, api_key):
+async def VT_analyze_url(url_to_analyze):
     """
     Analyzes a URL using the VirusTotal API.
 
@@ -51,7 +53,7 @@ async def VT_analyze_url(url_to_analyze, api_key):
     payload = {"url": url_to_analyze}
     headers = {
         "accept": "application/json",
-        "x-apikey": api_key,
+        "x-apikey": VTAPI_KEY,
         "content-type": "application/x-www-form-urlencoded"
     }
 
@@ -140,7 +142,7 @@ async def VT_analyze_file(api_key, file_path):
                 data.add_field('file', f)
                 headers = {
                     "accept": "application/json",
-                    "x-apikey": api_key
+                    "x-apikey": VTAPI_KEY
                 }
 
                 async with session.post(UPLOAD_URL, data=data, headers=headers) as response:
@@ -178,11 +180,3 @@ async def main():
     result = await VT_analyze_file(API_KEY, file_path)
     print("File upload result:")
     print(json.dumps(result, indent=4))
-
-# 執行主函式
-if __name__ == "__main__":
-    # 載入環境變數
-    dotenv.load_dotenv()
-    # get the API key from the environment variable
-    API_KEY = os.getenv("VT-API-KEY")
-    asyncio.run(main())
