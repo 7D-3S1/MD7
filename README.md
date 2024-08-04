@@ -6,9 +6,9 @@ Mail Detector 7 Day 是一個瀏覽器擴充套件，專為加強網路安全和
 ## 介紹
 這是在 AIS3 2024 誕生的小專案，由 iach526526、sharonhsuan、jameschiu1023 共同開發。
 
->iach526526：我想做瀏覽器擴充套件
 
-### why 瀏覽器插件
+
+### why 瀏覽器擴充套件
 不需要開另一個網頁去檢查，閱讀信箱時就可以即時看到風險評估，和郵件內容一起顯示，不香嗎？
 
 ### 部屬
@@ -38,7 +38,7 @@ pip freeze > requirements.txt
 ```
 chainlit run web.py
 ```
-- 設定環境變數(.env)
+- 設定環境變數(.env)，把 .env.example 改檔名為 .env，並把你自己的 API key 塞進去
 
 
 
