@@ -223,11 +223,8 @@ async def analyze_email(content: str, attachments: List[Element], sender_email: 
         {"examples": examples, "content": email_content_prompt + url_analysis_prompt + VT_attachments_analyze_prompt}
     ):
         await msg.stream_token(chunk)
-    if retunr_require:
-        print("mmsg:",msg.content)
-        return msg.content
-    else:
-        await msg.send()
+
+    await msg.send()
     
     # response = await runnable.ainvoke({"examples": examples, "content": email_content_prompt + VT_attachments_analyze_prompt})
 
