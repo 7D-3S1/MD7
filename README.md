@@ -40,7 +40,8 @@ pip freeze > requirements.txt
 ```
 chainlit run web.py
 ```
-
+## Demo
+![Demo GIF](./img/Demo.gif)
 
 ## 介紹
 > 這是在 AIS3 2024 在七天內誕生的小專案，由 iach526526、sharonhsuan、jameschiu1023 共同開發。
