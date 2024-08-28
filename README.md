@@ -1,41 +1,40 @@
+### First Translation
+
 # MD7
 
-Mail Detector 7 Day 是一個瀏覽器擴充套件，專為加強網路安全和減少被網路釣魚。這個擴充套件檢測正在閱讀的電子郵件和即將點閱的連結，給出精確的提醒，從根本預防網路釣魚🐟🐟🐟！
+Mail Detector 7 Day is a browser extension designed to enhance online security and reduce the risk of phishing. This extension detects the emails you are reading and the links you are about to click, providing precise alerts to fundamentally prevent phishing 🐟🐟🐟!
 
-使用語言模型分析郵件文本、公開 API 分析寄件訊息，為所有使用者做好把關
+Using language models to analyze email text and public APIs to analyze sender information, it ensures protection for all users.
 
+### Why Browser Extension?
+You don't need to open another webpage for checking; you can see risk assessments in real-time while reading your mailbox, displayed alongside the email content. Isn't that convenient?
 
-
-### why 瀏覽器擴充套件？
-不需要開另一個網頁去檢查，閱讀信箱時就可以即時看到風險評估，和郵件內容一起顯示，不香嗎？
-
-
-### 部屬
-#### run in local
-- 建立虛擬環境(第一次執行需要執行，並確保有 virtualenv 套件)
+### Deployment
+#### Run in Local
+- Create a virtual environment (this needs to be done the first time, and ensure you have the `virtualenv` package)
 ```
 virtualenv env01
 ```
-- 在專案跟目錄執行此命令進入虛擬環境
+- Execute this command in the project root directory to enter the virtual environment
 ```
 .\env01\Scripts\activate
 ```
-- 安裝套件
+- Install packages
 ```
 pip install -r requirements.txt
 ```
-- 安裝網頁顯示與LLM互動套件
+- Install web display and LLM interaction packages
 ```
 pip install chainlit
 pip install -U langchain-chroma
 pip install -U langchain-openai
 ```
 
-- 增加套件
+- Add packages
 ```
 pip freeze > requirements.txt
 ```
-- 設定環境變數(.env)，把 .env.example 改檔名為 .env，並把你自己的 API key 塞進去
+- Set environment variables (.env). Rename `.env.example` to `.env`, and insert your own API key
 - Run LLM
 ```
 chainlit run web.py
@@ -43,6 +42,8 @@ chainlit run web.py
 ## Demo
 ![Demo GIF](./img/Demo.gif)
 
-## 介紹
-> 這是在 AIS3 2024 在七天內誕生的小專案，由 iach526526、sharonhsuan、jameschiu1023 共同開發。
 
+## 介紹
+> Power by iach526526、sharonhsuan、jameschiu1023 in AIS3 2024
+
+>Note: Currently, you need to use your own API key and run it locally. The online version will be available soon.
