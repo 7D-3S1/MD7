@@ -1,5 +1,3 @@
-### First Translation
-
 # MD7
 
 Mail Detector 7 Day is a browser extension designed to enhance online security and reduce the risk of phishing. This extension detects the emails you are reading and the links you are about to click, providing precise alerts to fundamentally prevent phishing 🐟🐟🐟!
